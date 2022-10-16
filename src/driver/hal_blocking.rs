@@ -25,6 +25,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::MAX31855;
+    use more_asserts::assert_lt;
 
     #[test]
     fn test_spi_reads() {
@@ -37,7 +38,7 @@ mod tests {
         let mut device = MAX31855::new(spi);
         let data = device.read_data().unwrap();
         assert_eq!(data.raw(), 0xFB701430);
-        assert_eq!(data.get_linear_temp().unwrap(), -83.7001f32);
+        assert_lt!((data.get_linear_temp().unwrap() - -83.7f32).abs(), 0.01f32);
         spi_base.done();
     }
 }

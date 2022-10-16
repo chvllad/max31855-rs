@@ -19,6 +19,19 @@ fn compute_polynomial<const N: usize>(coeffs: &[f32; N], data: f32) -> f32 {
         .0
 }
 
+#[inline(always)]
+fn exp(val: f32) -> f32 {
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libm")] {
+            libm::expf(val)
+        } else if #[cfg(feature = "micromath")] {
+            micromath::F32Ext::exp(val)
+        } else {
+            compile_error!("Either libm or micromath feature should be specified")
+        }
+    }
+}
+
 pub fn linearize_temp(total_temp: f32, ic_temp: f32) -> Result<f32, LinearizationError> {
     // Subtract cold junction temperature from the raw thermocouple temperature and convert to mV.
     let thermocouple_voltage = (total_temp - ic_temp) * 0.041276;
@@ -36,7 +49,7 @@ pub fn linearize_temp(total_temp: f32, ic_temp: f32) -> Result<f32, Linearizatio
 
     let cj_voltage = if ic_temp_positive {
         let c1 = ic_temp - 0.1269686E+03;
-        cj_voltage + 0.1185976E+00 * libm::expf(-0.1183432E-03 * c1 * c1)
+        cj_voltage + 0.1185976E+00 * exp(-0.1183432E-03 * c1 * c1)
     } else {
         cj_voltage
     };

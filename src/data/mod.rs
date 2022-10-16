@@ -50,8 +50,8 @@ impl MAX31855Data {
         (temp as f32) * 0.0625
     }
     #[cfg(feature = "linearization")]
-    /// Gets thermocouple temp in degrees celsius and corrects them using
-    /// [NIST Equasions](https://srdata.nist.gov/its90/download/type_k.tab) for
+    /// Gets thermocouple temp in degrees celsius and corrects it using
+    /// [NIST Equations](https://srdata.nist.gov/its90/download/type_k.tab) for
     /// better accuracy over an extended range
     pub fn get_linear_temp(&self) -> Result<f32, MAX31855DataError> {
         use error_stack::ResultExt;

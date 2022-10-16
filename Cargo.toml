@@ -4,15 +4,15 @@ version = "0.1.0"
 authors = ["Vladislab Cherepita <chevllad@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/chvllad/max31855-rs"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "MAX31855 driver with linearization support"
 readme = "README.md"
 keywords = ["spi", "driver", "embedded-hal-driver", "maxim", "max31855"]
 categories = ["embedded", "hardware-support", "no-std"]
 
 [features]
-default = ["linearization", "hal-block"]
-linearization = ["dep:libm"]
+default = ["linearization", "micromath", "hal-block"]
+linearization = []
 hal-async = ["dep:embedded-hal-async"]
 hal-block = ["dep:embedded-hal"]
 
@@ -20,7 +20,9 @@ hal-block = ["dep:embedded-hal"]
 embedded-hal = { version = "=1.0.0-alpha.9", optional = true }
 embedded-hal-async = { version = "=0.1.0-alpha.2", optional = true }
 libm = { version = "0.2.5", optional = true }
+micromath = { version = "2", optional = true }
 error-stack = { version = "0.2.3", default-features = false }
+cfg-if = "1.0"
 
 [dev-dependencies]
 more-asserts = "0.3.1"

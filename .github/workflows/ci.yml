@@ -29,7 +29,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           target: ${{ matrix.target }}
       - run: cargo build --target ${{ matrix.target }}
-      - run: cargo build --target ${{ matrix.target }} --no-default-features --features "hal-async,linearization"
+      - run: cargo build --target ${{ matrix.target }} --no-default-features --features "hal-async"
         if: ${{ matrix.toolchain == 'nightly' }}
 
   test:
@@ -50,7 +50,7 @@ jobs:
         with:
           components: clippy
       - run: cargo clippy -- --deny warnings
-      - run: cargo clippy --no-default-features --features "hal-async,linearization" -- --deny warnings
+      - run: cargo clippy --no-default-features --features "hal-async" -- --deny warnings
 
   format:
     name: Format
