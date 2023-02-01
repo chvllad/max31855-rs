@@ -1,10 +1,9 @@
-use error_stack::{bail, Result};
-
 mod k_type_constants;
 use k_type_constants::*;
 
 mod error;
 pub use error::LinearizationError;
+use error::{TooHighSnafu, TooLowSnafu};
 
 // Computes coeffs[0] * data^0 + coeffs[1] * data^1 + ... + coeffs[n] * data^n
 fn compute_polynomial<const N: usize>(coeffs: &[f32; N], data: f32) -> f32 {
@@ -61,7 +60,11 @@ pub fn linearize_temp(total_temp: f32, ic_temp: f32) -> Result<f32, Linearizatio
     // the cold junction compensated, linearized temperature value.
     let array = if total_voltage < 0f32 {
         if total_voltage < MIN_VOLTAGE {
-            bail!(LinearizationError::new_low(total_voltage, total_temp));
+            return TooLowSnafu {
+                voltage: total_voltage,
+                temp: total_temp,
+            }
+            .fail();
         }
         &NEGATIVE_INVERSE
     } else if total_voltage < 20.644f32 {
@@ -69,7 +72,11 @@ pub fn linearize_temp(total_temp: f32, ic_temp: f32) -> Result<f32, Linearizatio
     } else if total_voltage < MAX_VOLTAGE {
         &HIGH_POSITIVE_INVERSE
     } else {
-        bail!(LinearizationError::new_high(total_voltage, total_temp));
+        return TooHighSnafu {
+            temp: total_temp,
+            voltage: total_voltage,
+        }
+        .fail();
     };
 
     let corrected_temp = compute_polynomial(array, total_voltage);
@@ -91,8 +98,7 @@ mod tests {
     fn high_temp_error() {
         const TEMP: f32 = 1350.0;
         let result = linearize_temp(TEMP, 0f32);
-        let report = result.unwrap_err();
-        let err = report.current_context();
+        let err = result.unwrap_err();
         assert!(matches!(err, LinearizationError::TooHigh { .. }));
     }
 
@@ -100,8 +106,7 @@ mod tests {
     fn low_temp_error() {
         const TEMP: f32 = -200.0;
         let result = linearize_temp(TEMP, 0f32);
-        let report = result.unwrap_err();
-        let err = report.current_context();
+        let err = result.unwrap_err();
         assert!(matches!(err, LinearizationError::TooLow { .. }));
     }
 }

@@ -1,14 +1,9 @@
-use core::fmt;
-use error_stack::Context;
+use snafu::prelude::*;
 
 /// MAX31855 error type
-#[derive(Debug)]
-pub struct MAX31855Error;
-
-impl fmt::Display for MAX31855Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("Cannot read MAX31855 data")
-    }
+#[derive(Debug, Clone, Snafu)]
+#[snafu(visibility(pub(super)))]
+#[snafu(display("could not read MAX31855 data: {error}"))]
+pub struct MAX31855Error<E: core::fmt::Display> {
+    error: E,
 }
-
-impl Context for MAX31855Error {}

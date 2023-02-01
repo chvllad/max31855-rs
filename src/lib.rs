@@ -25,9 +25,7 @@ mod linearization;
 pub use linearization::LinearizationError;
 
 mod data;
-pub use data::MAX31855Data;
-pub use data::MAX31855DataError;
+pub use data::{MAX31855Data, MAX31855DataError};
 
 mod driver;
-pub use driver::MAX31855Error;
-pub use driver::MAX31855;
+pub use driver::{MAX31855Error, MAX31855};

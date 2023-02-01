@@ -1,5 +1,6 @@
-use embedded_hal::spi::{SpiBusRead, SpiDevice};
-use error_stack::{IntoReport, Result};
+use embedded_hal::spi::{Error, ErrorKind, SpiBusRead, SpiDevice};
+
+pub type MAX31855Error = super::error::MAX31855Error<ErrorKind>;
 
 impl<SPI> super::MAX31855<SPI>
 where
@@ -12,20 +13,20 @@ where
     }
 
     /// Reads data from device
-    pub fn read_data(&mut self) -> Result<crate::MAX31855Data, super::MAX31855Error> {
+    pub fn read_data(&mut self) -> Result<crate::MAX31855Data, MAX31855Error> {
         let mut buf = [0; 4];
         self.0
             .read(&mut buf)
-            .map_err(|_| super::MAX31855Error)
-            .into_report()?;
+            .map_err(|e| super::MAX31855Snafu { error: e.kind() }.build())?;
         Ok(crate::MAX31855Data::new(u32::from_be_bytes(buf)))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::MAX31855;
     use more_asserts::assert_lt;
+
+    use crate::MAX31855;
 
     #[test]
     fn test_spi_reads() {

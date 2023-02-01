@@ -1,44 +1,13 @@
-use core::fmt;
-
-use error_stack::Context;
-
-use super::k_type_constants::{MAX_VOLTAGE, MIN_VOLTAGE};
+use snafu::prelude::*;
 
 /// Possible linearization errors
-#[derive(Debug)]
+#[derive(Debug, Clone, Snafu)]
+#[snafu(visibility(pub(super)))]
 pub enum LinearizationError {
     /// The temperature of thermocouple after linearization was too high (bigger than 1372 °C)
+    #[snafu(display("temperature of thermocouple may not be higher than 1372 °C, but it was {temp}. Voltage {voltage}"))]
     TooHigh { voltage: f32, temp: f32 },
     /// The temperature of thermocouple after linearization was too low (bigger than -200 °C)
+    #[snafu(display("temperature of thermocouple may not be lower than -200 °C, but it was {temp}. Voltage {voltage}"))]
     TooLow { voltage: f32, temp: f32 },
 }
-
-impl LinearizationError {
-    pub(super) fn new_high(voltage: f32, temp: f32) -> Self {
-        LinearizationError::TooHigh { voltage, temp }
-    }
-    pub(super) fn new_low(voltage: f32, temp: f32) -> Self {
-        LinearizationError::TooLow { voltage, temp }
-    }
-}
-
-impl fmt::Display for LinearizationError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str("Cannot perform linearization: temp is too ")?;
-        let (voltage, temp, desc, val) = match self {
-            LinearizationError::TooHigh { voltage, temp } => {
-                fmt.write_str("high")?;
-                (voltage, temp, "max", MAX_VOLTAGE)
-            }
-            LinearizationError::TooLow { voltage, temp } => {
-                fmt.write_str("low")?;
-                (voltage, temp, "min", MIN_VOLTAGE)
-            }
-        };
-        fmt.write_fmt(format_args!(
-            ". Got voltage: {voltage}mV ({desc}: {val}mV), non-linearized temp: {temp} °C."
-        ))
-    }
-}
-
-impl Context for LinearizationError {}
