@@ -1,14 +1,13 @@
 use snafu::prelude::*;
 
-use crate::LinearizationError;
-
 /// MAX31855Data error type
 #[derive(Debug, Clone, Snafu)]
 #[snafu(visibility(pub(super)))]
 pub enum MAX31855DataError {
+    #[cfg(feature = "linearization")]
     /// Linearization error
     #[snafu(display("linearization error"))]
-    Linearization { source: LinearizationError },
+    Linearization { source: crate::LinearizationError },
     /// Unknown error
     #[snafu(display("unknown error"))]
     Unknown,

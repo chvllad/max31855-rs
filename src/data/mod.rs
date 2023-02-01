@@ -1,9 +1,6 @@
 mod error;
 pub use error::MAX31855DataError;
-use error::{
-    LinearizationSnafu, OpenConnectionSnafu, ShortGroundSnafu, ShortVCCSnafu, UnknownSnafu,
-};
-use snafu::prelude::*;
+use error::{OpenConnectionSnafu, ShortGroundSnafu, ShortVCCSnafu, UnknownSnafu};
 
 /// Represents the data read from the MAX31855
 #[derive(Clone, Copy)]
@@ -56,9 +53,11 @@ impl MAX31855Data {
     /// [NIST Equations](https://srdata.nist.gov/its90/download/type_k.tab) for
     /// better accuracy over an extended range
     pub fn get_linear_temp(&self) -> Result<f32, MAX31855DataError> {
+        use snafu::prelude::*;
+
         self.error()?;
         crate::linearization::linearize_temp(self.thermocouple_temp(), self.internal_temp())
-            .context(LinearizationSnafu)
+            .context(error::LinearizationSnafu)
     }
 }
 
