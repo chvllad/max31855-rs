@@ -1,7 +1,6 @@
-use error_stack::{bail, Result};
-
 mod error;
 pub use error::MAX31855DataError;
+use error::{OpenConnectionSnafu, ShortGroundSnafu, ShortVCCSnafu, UnknownSnafu};
 
 /// Represents the data read from the MAX31855
 #[derive(Clone, Copy)]
@@ -29,15 +28,15 @@ impl MAX31855Data {
     fn error(&self) -> Result<(), MAX31855DataError> {
         if (self.0 & (1 << 16)) != 0 {
             if (self.0 & 0b001) != 0 {
-                bail!(MAX31855DataError::OpenConnection);
+                return OpenConnectionSnafu.fail();
             }
             if (self.0 & 0b010) != 0 {
-                bail!(MAX31855DataError::ShortGround);
+                return ShortGroundSnafu.fail();
             }
             if (self.0 & 0b100) != 0 {
-                bail!(MAX31855DataError::ShortVCC);
+                return ShortVCCSnafu.fail();
             }
-            bail!(MAX31855DataError::Unknown);
+            return UnknownSnafu.fail();
         }
         Ok(())
     }
@@ -54,11 +53,11 @@ impl MAX31855Data {
     /// [NIST Equations](https://srdata.nist.gov/its90/download/type_k.tab) for
     /// better accuracy over an extended range
     pub fn get_linear_temp(&self) -> Result<f32, MAX31855DataError> {
-        use error_stack::ResultExt;
+        use snafu::prelude::*;
 
         self.error()?;
         crate::linearization::linearize_temp(self.thermocouple_temp(), self.internal_temp())
-            .change_context(MAX31855DataError::Internal)
+            .context(error::LinearizationSnafu)
     }
 }
 
@@ -76,10 +75,9 @@ mod tests {
     fn test_linearization_error() {
         for value in LINEARIZE_ERROR_VALUES {
             let data = MAX31855Data(value.0);
-            let report = data.get_linear_temp().unwrap_err();
-            let ctx = report.current_context();
+            let err = data.get_linear_temp().unwrap_err();
             assert!(
-                matches!(ctx, MAX31855DataError::Internal),
+                matches!(err, MAX31855DataError::Linearization { .. }),
                 "Linearize should fail for {}",
                 value.1
             );
@@ -95,29 +93,25 @@ mod tests {
         }
     }
 
-    fn test_error(val: u32, fun: impl Fn(&MAX31855DataError) -> bool) {
+    fn test_error(val: u32, fun: impl Fn(MAX31855DataError) -> bool) {
         let data = MAX31855Data(val);
-        let rep = data.clone().get_thermocouple_temp().unwrap_err();
-        let ctx = rep.current_context();
-        assert!(fun(ctx));
-        let rep = data.clone().get_linear_temp().unwrap_err();
-        let ctx = rep.current_context();
-        assert!(fun(ctx));
+        let err = data.clone().get_thermocouple_temp().unwrap_err();
+        assert!(fun(err));
+        let err = data.clone().get_linear_temp().unwrap_err();
+        assert!(fun(err));
     }
 
-    fn test_not_error(val: u32, fun: impl Fn(&MAX31855DataError) -> bool) {
+    fn test_not_error(val: u32, fun: impl Fn(MAX31855DataError) -> bool) {
         let data = MAX31855Data(val);
-        if let Err(rep) = data.clone().get_thermocouple_temp() {
-            let ctx = rep.current_context();
-            assert!(!fun(ctx));
+        if let Err(err) = data.clone().get_thermocouple_temp() {
+            assert!(!fun(err));
         }
-        if let Err(rep) = data.clone().get_linear_temp() {
-            let ctx = rep.current_context();
-            assert!(!fun(ctx));
+        if let Err(err) = data.clone().get_linear_temp() {
+            assert!(!fun(err));
         }
     }
 
-    fn test_bit(id: u8, fun: fn(&MAX31855DataError) -> bool) {
+    fn test_bit(id: u8, fun: fn(MAX31855DataError) -> bool) {
         let val = 1u32 << id;
         test_error(val | (1u32 << 16), fun);
         test_not_error(val, |e| !fun(e));
